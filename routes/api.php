@@ -102,8 +102,9 @@ Route::middleware('auth:sanctum')->group(function () {
 */
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/ratings', [RatingController::class, 'index']);
-    Route::post('/ratings', [RatingController::class, 'store']);
-    Route::get('/ratings/{id}', [RatingController::class, 'show']);
+    Route::get('/rating/user/{id}', [RatingController::class, 'userRating']);
+    Route::post('/rating', [RatingController::class, 'store']);
+    Route::get('/rating/{id}', [RatingController::class, 'show']);
 });
 
 /*
@@ -116,3 +117,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/profil', [ProfilController::class, 'storeOrUpdate']);
     Route::post('/profil/upload-foto', [ProfilController::class, 'uploadFoto']);
 });
+
+
+

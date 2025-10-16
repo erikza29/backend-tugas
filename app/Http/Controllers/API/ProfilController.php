@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\API;
+namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Profil;
@@ -30,6 +30,11 @@ class ProfilController extends Controller
             ]);
         }
 
+        // pastikan gambar_url jadi full URL
+        if ($profil->gambar_url) {
+            $profil->gambar_url = url($profil->gambar_url);
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Data profil berhasil diambil',
@@ -40,21 +45,50 @@ class ProfilController extends Controller
     // Menyimpan atau mengupdate profil pekerja
     public function storeOrUpdate(Request $request)
     {
-        $request->validate([
+        $validator = Validator::make($request->all(), [
             'nama' => 'required|string|max:255',
             'deskripsi' => 'required|string',
-            'gambar_url' => 'nullable|string',
+            'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $profil = Profil::where('pekerja_id', Auth::id())->first();
+        $data = [
+            'nama' => $request->nama,
+            'deskripsi' => $request->deskripsi,
+        ];
+
+        // jika ada foto baru
+        if ($request->hasFile('foto')) {
+            $file = $request->file('foto');
+            $filename = uniqid().'_'.$file->getClientOriginalName();
+            $path = $file->storeAs('profil', $filename, 'public');
+
+            // hapus foto lama jika ada
+            if ($profil && $profil->gambar_url) {
+                $oldPath = str_replace('/storage/', '', $profil->gambar_url);
+                Storage::disk('public')->delete($oldPath);
+            }
+
+            $data['gambar_url'] = Storage::url($path);
+        }
+
         $profil = Profil::updateOrCreate(
-            ['pekerja_id' => Auth::id()
-],
-            [
-                'nama' => $request->nama,
-                'deskripsi' => $request->deskripsi,
-                'gambar_url' => $request->gambar_url,
-            ]
+            ['pekerja_id' => Auth::id()],
+            $data
         );
+
+        // ubah jadi full URL
+        if ($profil->gambar_url) {
+            $profil->gambar_url = url($profil->gambar_url);
+        }
 
         return response()->json([
             'success' => true,
@@ -82,16 +116,21 @@ class ProfilController extends Controller
         $filename = uniqid().'_'.$file->getClientOriginalName();
         $path = $file->storeAs('profil', $filename, 'public');
 
-
         // Cek apakah profil sudah ada
         $profil = Profil::firstOrCreate(
             ['pekerja_id' => $user->id],
             [
-                'nama' => $user->name,   // default pakai nama user
-                'deskripsi' => '',       // deskripsi kosong default
+                'nama' => $user->name,
+                'deskripsi' => '',
                 'gambar_url' => null,
             ]
         );
+
+        // hapus foto lama jika ada
+        if ($profil->gambar_url) {
+            $oldPath = str_replace('/storage/', '', $profil->gambar_url);
+            Storage::disk('public')->delete($oldPath);
+        }
 
         // Update foto profil
         $profil->gambar_url = Storage::url($path);
@@ -101,9 +140,9 @@ class ProfilController extends Controller
             'success' => true,
             'message' => 'Foto profil berhasil diupload',
             'data' => [
-                'gambar_url' => asset(Storage::url($path)),
+                'gambar_url' => url($profil->gambar_url),
             ]
         ]);
     }
-
 }
+

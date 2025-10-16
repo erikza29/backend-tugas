@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
-use App\Models\Rating;
+use App\Models\rating;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -11,11 +11,10 @@ class RatingController extends Controller
 {
     public function index()
     {
-        $ratings = Rating::with(['pemberi', 'penerima', 'loker'])->get();
-
+        $ratings = rating::with(['pemberi', 'penerima', 'loker'])->get();
         return response()->json([
             'success' => true,
-            'message' => 'Daftar rating',
+            'message' => 'Daftar semua rating',
             'data' => $ratings
         ]);
     }
@@ -28,7 +27,7 @@ class RatingController extends Controller
             'rating' => 'required|integer|min:1|max:5',
         ]);
 
-        $rating = Rating::updateOrCreate(
+        $rating = rating::updateOrCreate(
             [
                 'yangreting_id' => Auth::id(),
                 'target_id' => $request->target_id,
@@ -48,13 +47,12 @@ class RatingController extends Controller
 
     public function show($id)
     {
-        $rating = Rating::with(['pemberi', 'penerima', 'loker'])->find($id);
+        $rating = rating::with(['pemberi', 'penerima', 'loker'])->find($id);
 
         if (!$rating) {
             return response()->json([
                 'success' => false,
                 'message' => 'Rating tidak ditemukan',
-                'data' => null
             ], 404);
         }
 
@@ -62,6 +60,19 @@ class RatingController extends Controller
             'success' => true,
             'message' => 'Detail rating',
             'data' => $rating
+        ]);
+    }
+
+    public function userRating($id)
+    {
+        $avg = rating::where('target_id', $id)->avg('rating');
+        $count = rating::where('target_id', $id)->count();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Rata-rata rating user',
+            'average_rating' => round($avg ?? 0, 1),
+            'total' => $count
         ]);
     }
 }
