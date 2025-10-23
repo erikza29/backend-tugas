@@ -102,9 +102,12 @@ Route::middleware('auth:sanctum')->group(function () {
 */
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/ratings', [RatingController::class, 'index']);
-    Route::get('/rating/user/{id}', [RatingController::class, 'userRating']);
     Route::post('/rating', [RatingController::class, 'store']);
     Route::get('/rating/{id}', [RatingController::class, 'show']);
+    Route::get('/rating/user/{id}', [RatingController::class, 'userRating']);
+    Route::get('/rating/user/{id}/list', [RatingController::class, 'listByUser']);
+    Route::get('/rating/check/{target_id}', [RatingController::class, 'check']);
+
 });
 
 /*

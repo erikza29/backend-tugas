@@ -11,7 +11,8 @@ class RatingController extends Controller
 {
     public function index()
     {
-        $ratings = rating::with(['pemberi', 'penerima', 'loker'])->get();
+        $ratings = Rating::with(['pemberi', 'penerima', 'loker'])->get();
+
         return response()->json([
             'success' => true,
             'message' => 'Daftar semua rating',
@@ -27,7 +28,7 @@ class RatingController extends Controller
             'rating' => 'required|integer|min:1|max:5',
         ]);
 
-        $rating = rating::updateOrCreate(
+        $rating = Rating::updateOrCreate(
             [
                 'yangreting_id' => Auth::id(),
                 'target_id' => $request->target_id,
@@ -38,6 +39,8 @@ class RatingController extends Controller
             ]
         );
 
+        $rating->load(['pemberi', 'penerima', 'loker']);
+
         return response()->json([
             'success' => true,
             'message' => 'Rating berhasil disimpan',
@@ -47,7 +50,7 @@ class RatingController extends Controller
 
     public function show($id)
     {
-        $rating = rating::with(['pemberi', 'penerima', 'loker'])->find($id);
+        $rating = Rating::with(['pemberi', 'penerima', 'loker'])->find($id);
 
         if (!$rating) {
             return response()->json([
@@ -65,8 +68,8 @@ class RatingController extends Controller
 
     public function userRating($id)
     {
-        $avg = rating::where('target_id', $id)->avg('rating');
-        $count = rating::where('target_id', $id)->count();
+        $avg = Rating::where('target_id', $id)->avg('rating');
+        $count = Rating::where('target_id', $id)->count();
 
         return response()->json([
             'success' => true,
@@ -75,4 +78,39 @@ class RatingController extends Controller
             'total' => $count
         ]);
     }
+
+    public function listByUser($id)
+    {
+        $ratings = Rating::with(['pemberi', 'loker'])
+            ->where('target_id', $id)
+            ->latest()
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Daftar rating user',
+            'data' => $ratings
+        ]);
+    }
+    public function check($target_id)
+    {
+        try {
+            $userId = Auth::id();
+
+            $alreadyRated = Rating::where('yangreting_id', $userId)
+                ->where('target_id', $target_id)
+                ->exists();
+
+            return response()->json([
+                'alreadyRated' => $alreadyRated
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Server error',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
 }
