@@ -113,6 +113,7 @@ Route::middleware('auth:sanctum')->group(function () {
 |--------------------------------------------------------------------------
 */
 Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/profil/{id}', [ProfilController::class, 'showPublic']);
     Route::get('/profil', [ProfilController::class, 'show']);
     Route::post('/profil', [ProfilController::class, 'storeOrUpdate']);
     Route::post('/profil/upload-foto', [ProfilController::class, 'uploadFoto']);

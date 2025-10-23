@@ -96,6 +96,29 @@ class ProfilController extends Controller
             'data' => $profil
         ]);
     }
+    public function showPublic($id)
+{
+    $profil = Profil::where('pekerja_id', $id)->first();
+
+    if (!$profil) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Profil tidak ditemukan',
+        ], 404);
+    }
+
+    // ubah URL gambar jadi full path
+    if ($profil->gambar_url) {
+        $profil->gambar_url = url($profil->gambar_url);
+    }
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Data profil pelamar berhasil diambil',
+        'data' => $profil
+    ]);
+}
+
 
     public function uploadFoto(Request $request)
     {
