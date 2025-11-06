@@ -48,7 +48,7 @@ class ProfilController extends Controller
         $validator = Validator::make($request->all(), [
             'nama' => 'required|string|max:255',
             'deskripsi' => 'required|string',
-            'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'foto' => 'nullable|image|mimes:jpeg,png,jpg,HEIC|max:2048',
         ]);
 
         if ($validator->fails()) {
@@ -123,7 +123,7 @@ class ProfilController extends Controller
     public function uploadFoto(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'foto' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+            'foto' => 'required|image|mimes:jpeg,png,jpg,HEIC|max:2048',
         ]);
 
         if ($validator->fails()) {
