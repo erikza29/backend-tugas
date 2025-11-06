@@ -10,14 +10,17 @@ use Illuminate\Support\Facades\Auth;
 
 class LokerController extends Controller
 {
-
+    // hanya menampilkan lowongan milik user login
     public function index()
     {
-        $lokers = Loker::with('user')->latest()->get();
+        $lokers = Loker::with('user')
+            ->where('user_id', Auth::id()) // filter hanya milik user login
+            ->latest()
+            ->get();
 
         return response()->json([
             'success' => true,
-            'message' => 'Daftar lowongan kerja',
+            'message' => 'Daftar lowongan milik Anda',
             'data' => $lokers
         ]);
     }
@@ -44,6 +47,14 @@ class LokerController extends Controller
     {
         $loker = Loker::with('user')->findOrFail($id);
 
+        // hanya pemilik yang bisa lihat detail
+        if ($loker->user_id !== Auth::id()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tidak diizinkan melihat lowongan ini'
+            ], 403);
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Detail lowongan',
@@ -55,11 +66,10 @@ class LokerController extends Controller
     {
         $loker = Loker::findOrFail($id);
 
-        // pastikan hanya pemilik yang bisa update
         if ($loker->user_id !== Auth::id()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Tidak diizinkan'
+                'message' => 'Tidak diizinkan memperbarui lowongan ini'
             ], 403);
         }
 
@@ -79,7 +89,7 @@ class LokerController extends Controller
         if ($loker->user_id !== Auth::id()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Tidak diizinkan'
+                'message' => 'Tidak diizinkan menghapus lowongan ini'
             ], 403);
         }
 
@@ -90,4 +100,32 @@ class LokerController extends Controller
             'message' => 'Lowongan berhasil dihapus'
         ]);
     }
+    public function publicIndex()
+{
+    $lokers = Loker::with('user')->latest()->get();
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Daftar semua lowongan tersedia',
+        'data' => $lokers
+    ]);
+}
+
+public function publicShow($id)
+{
+    $loker = Loker::with('user')->find($id);
+
+    if (!$loker) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Lowongan tidak ditemukan'
+        ], 404);
+    }
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Detail lowongan',
+        'data' => $loker
+    ]);
+}
 }

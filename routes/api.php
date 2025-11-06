@@ -32,12 +32,17 @@ Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logo
 |--------------------------------------------------------------------------
 */
 Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/lokers', [LokerController::class, 'index']);
-    Route::post('/lokers', [LokerController::class, 'store']);
-    Route::get('/lokers/{id}', [LokerController::class, 'show']);
-    Route::put('/lokers/{id}', [LokerController::class, 'update']);
-    Route::delete('/lokers/{id}', [LokerController::class, 'destroy']);
+    Route::get('/loker', [LokerController::class, 'index']);
+    Route::post('/loker', [LokerController::class, 'store']);
+    Route::get('/loker/{id}', [LokerController::class, 'show']);
+    Route::put('/loker/{id}', [LokerController::class, 'update']);
+    Route::delete('/loker/{id}', [LokerController::class, 'destroy']);
+
 });
+// === ROUTE PUBLIK UNTUK PEKERJA ===
+Route::get('/lokers', [LokerController::class, 'publicIndex']); // daftar semua loker
+Route::get('/lokers/{id}', [LokerController::class, 'publicShow']); // detail satu loker
+
 
 /*
 |-------------------------------------------------------------------------
