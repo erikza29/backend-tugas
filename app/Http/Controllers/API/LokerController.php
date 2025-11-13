@@ -101,31 +101,55 @@ class LokerController extends Controller
         ]);
     }
     public function publicIndex()
-{
-    $lokers = Loker::with('user')->latest()->get();
+    {
+        $lokers = Loker::with('user')->latest()->get();
 
-    return response()->json([
-        'success' => true,
-        'message' => 'Daftar semua lowongan tersedia',
-        'data' => $lokers
-    ]);
-}
-
-public function publicShow($id)
-{
-    $loker = Loker::with('user')->find($id);
-
-    if (!$loker) {
         return response()->json([
-            'success' => false,
-            'message' => 'Lowongan tidak ditemukan'
-        ], 404);
+            'success' => true,
+            'message' => 'Daftar semua lowongan tersedia',
+            'data' => $lokers
+        ]);
     }
 
-    return response()->json([
-        'success' => true,
-        'message' => 'Detail lowongan',
-        'data' => $loker
-    ]);
-}
+    public function publicShow($id)
+    {
+        $loker = Loker::with('user')->find($id);
+
+        if (!$loker) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lowongan tidak ditemukan'
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Detail lowongan',
+            'data' => $loker
+        ]);
+    }
+
+    public function updateStatus(Request $request, $id)
+    {
+        $loker = Loker::find($id);
+        if (!$loker) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lowongan tidak ditemukan'
+            ], 404);
+        }
+
+        $request->validate([
+            'status' => 'required|in:aktif,tutup'
+        ]);
+
+        $loker->status = $request->status;
+        $loker->save();
+
+        return response()->json([
+            'success' => true,
+            'data' => $loker
+        ]);
+    }
+
 }

@@ -125,7 +125,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/profil', [ProfilController::class, 'storeOrUpdate']);
     Route::post('/profil/upload', [ProfilController::class, 'uploadFoto']);
     Route::get('/profil/{id}', [ProfilController::class, 'showPublic']);
+    Route::post('/lamaran/terima', [StatusPekerjaanController::class, 'terimaLamaran']);
+    Route::post('/pekerjaan/tolak', [StatusPekerjaanController::class, 'tolakPekerjaan']);
+    Route::get('/riwayat', [StatusPekerjaanController::class, 'riwayatGabungan']);
+    Route::put('/loker/{id}/status', [LokerController::class, 'updateStatus']);
+
 });
+
 
 
 
