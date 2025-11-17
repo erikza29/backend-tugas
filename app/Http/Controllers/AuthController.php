@@ -52,15 +52,14 @@ class AuthController extends Controller
         ]);
     }
 
- public function register(Request $request)
+    public function register(Request $request)
     {
         try {
             // Validasi input
             $validator = Validator::make($request->all(), [
                 'name' => 'required|string|max:255',
-                'email' => 'required|string|email|max:255|unique:users',
+                'email' => 'required|string|email|max:255|unique:users,email',
                 'password' => 'required|string|min:1',
-                'no_hp' => 'nullable|string|max:15'
             ]);
 
             if ($validator->fails()) {
@@ -71,12 +70,12 @@ class AuthController extends Controller
                 ], 422);
             }
 
-            // Simpan user ke database
+            // Simpan user ke database (kolom sesuai model User)
             $user = User::create([
                 'name'     => $request->name,
                 'email'    => $request->email,
                 'password' => Hash::make($request->password),
-                'no_hp'    => $request->no_hp
+                'whatsapp' => null, // default (karena frontend tidak mengirim)
             ]);
 
             return response()->json([
@@ -86,15 +85,15 @@ class AuthController extends Controller
             ], 201);
 
         } catch (Exception $e) {
-            // Catat error ke log Laravel
             Log::error('Error saat registrasi: ' . $e->getMessage());
 
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan server',
-                'error'   => $e->getMessage() // Untuk debug, hapus di production
+                'error'   => $e->getMessage()
             ], 500);
         }
     }
+
 
 }

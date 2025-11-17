@@ -10,13 +10,17 @@ use Illuminate\Support\Facades\Auth;
 
 class LokerController extends Controller
 {
-    // hanya menampilkan lowongan milik user login
+    // 🔹 Hanya menampilkan lowongan milik user login
     public function index()
     {
-        $lokers = Loker::with('user')
-            ->where('user_id', Auth::id()) // filter hanya milik user login
+        $lokers = Loker::with(['user.profil'])
+            ->where('user_id', Auth::id())
             ->latest()
             ->get();
+
+        $lokers->map(function ($l) {
+            $l->gambar_url = $l->gambar ? asset('uploads/loker/' . $l->gambar) : null;
+        });
 
         return response()->json([
             'success' => true,
@@ -25,16 +29,24 @@ class LokerController extends Controller
         ]);
     }
 
+    // 🔹 Store (buat lowongan baru)
     public function store(LokerRequest $request)
     {
-        $loker = Loker::create([
-            'judul' => $request->judul,
-            'deskripsi' => $request->deskripsi,
-            'lokasi' => $request->lokasi,
-            'gaji' => $request->gaji,
-            'deadline' => $request->deadline,
-            'user_id' => Auth::id(),
-        ]);
+        $data = $request->all();
+        $data['user_id'] = Auth::id();
+
+        // Simpan gambar
+        if ($request->hasFile('gambar')) {
+            $filename = time() . '.' . $request->gambar->extension();
+            $request->gambar->move(public_path('uploads/loker'), $filename);
+            $data['gambar'] = $filename;
+        }
+
+        // Simpan awal, deadline belum dihitung (hanya disimpan setting-nya)
+        $loker = Loker::create($data);
+
+        $loker->load(['user.profil']);
+        $loker->gambar_url = $loker->gambar ? asset('uploads/loker/' . $loker->gambar) : null;
 
         return response()->json([
             'success' => true,
@@ -43,17 +55,19 @@ class LokerController extends Controller
         ]);
     }
 
+    // 🔹 Show (detail lowongan)
     public function show($id)
     {
-        $loker = Loker::with('user')->findOrFail($id);
+        $loker = Loker::with(['user.profil'])->findOrFail($id);
 
-        // hanya pemilik yang bisa lihat detail
         if ($loker->user_id !== Auth::id()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Tidak diizinkan melihat lowongan ini'
             ], 403);
         }
+
+        $loker->gambar_url = $loker->gambar ? asset('uploads/loker/' . $loker->gambar) : null;
 
         return response()->json([
             'success' => true,
@@ -62,6 +76,7 @@ class LokerController extends Controller
         ]);
     }
 
+    // 🔹 Update (update data + gambar)
     public function update(LokerRequest $request, $id)
     {
         $loker = Loker::findOrFail($id);
@@ -73,7 +88,23 @@ class LokerController extends Controller
             ], 403);
         }
 
-        $loker->update($request->all());
+        $data = $request->all();
+
+        // Update gambar
+        if ($request->hasFile('gambar')) {
+            if ($loker->gambar && file_exists(public_path('uploads/loker/' . $loker->gambar))) {
+                unlink(public_path('uploads/loker/' . $loker->gambar));
+            }
+
+            $filename = time() . '.' . $request->gambar->extension();
+            $request->gambar->move(public_path('uploads/loker'), $filename);
+            $data['gambar'] = $filename;
+        }
+
+        $loker->update($data);
+
+        $loker->load(['user.profil']);
+        $loker->gambar_url = $loker->gambar ? asset('uploads/loker/' . $loker->gambar) : null;
 
         return response()->json([
             'success' => true,
@@ -82,6 +113,7 @@ class LokerController extends Controller
         ]);
     }
 
+    // 🔹 Hapus lowongan
     public function destroy($id)
     {
         $loker = Loker::findOrFail($id);
@@ -93,6 +125,10 @@ class LokerController extends Controller
             ], 403);
         }
 
+        if ($loker->gambar && file_exists(public_path('uploads/loker/' . $loker->gambar))) {
+            unlink(public_path('uploads/loker/' . $loker->gambar));
+        }
+
         $loker->delete();
 
         return response()->json([
@@ -100,9 +136,15 @@ class LokerController extends Controller
             'message' => 'Lowongan berhasil dihapus'
         ]);
     }
+
+    // 🔹 Public list (untuk semua visitor)
     public function publicIndex()
     {
-        $lokers = Loker::with('user')->latest()->get();
+        $lokers = Loker::with(['user.profil'])->latest()->get();
+
+        $lokers->map(function ($l) {
+            $l->gambar_url = $l->gambar ? asset('uploads/loker/' . $l->gambar) : null;
+        });
 
         return response()->json([
             'success' => true,
@@ -111,9 +153,10 @@ class LokerController extends Controller
         ]);
     }
 
+    // 🔹 Public detail
     public function publicShow($id)
     {
-        $loker = Loker::with('user')->find($id);
+        $loker = Loker::with(['user.profil'])->find($id);
 
         if (!$loker) {
             return response()->json([
@@ -122,6 +165,8 @@ class LokerController extends Controller
             ], 404);
         }
 
+        $loker->gambar_url = $loker->gambar ? asset('uploads/loker/' . $loker->gambar) : null;
+
         return response()->json([
             'success' => true,
             'message' => 'Detail lowongan',
@@ -129,9 +174,11 @@ class LokerController extends Controller
         ]);
     }
 
+    // 🔹 Update status lowongan (DIPAKAI ADMIN ACC/TOLAK PELAMAR)
     public function updateStatus(Request $request, $id)
     {
         $loker = Loker::find($id);
+
         if (!$loker) {
             return response()->json([
                 'success' => false,
@@ -143,13 +190,35 @@ class LokerController extends Controller
             'status' => 'required|in:aktif,tutup'
         ]);
 
-        $loker->status = $request->status;
+        $oldStatus = $loker->status;
+        $newStatus = $request->status;
+
+        // 🔥 Jika status berubah dari AKTIF → TUTUP, maka deadline mulai dihitung
+        if ($oldStatus === 'aktif' && $newStatus === 'tutup') {
+            if ($loker->deadline_value && $loker->deadline_unit) {
+                if ($loker->deadline_unit === 'jam') {
+                    $loker->deadline_end = now()->addHours($loker->deadline_value);
+                } elseif ($loker->deadline_unit === 'hari') {
+                    $loker->deadline_end = now()->addDays($loker->deadline_value);
+                }
+            }
+        }
+
+        // 🔥 Jika status dari TUTUP → AKTIF, reset deadline
+        if ($oldStatus === 'tutup' && $newStatus === 'aktif') {
+            $loker->deadline_end = null;
+        }
+
+        // Update status
+        $loker->status = $newStatus;
         $loker->save();
+
+        $loker->load(['user.profil']);
+        $loker->gambar_url = $loker->gambar ? asset('uploads/loker/' . $loker->gambar) : null;
 
         return response()->json([
             'success' => true,
             'data' => $loker
         ]);
     }
-
 }

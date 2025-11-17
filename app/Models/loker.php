@@ -10,8 +10,18 @@ class loker extends Model
     use HasFactory;
 
     protected $fillable = [
-        'judul', 'deskripsi', 'lokasi', 'gaji', 'deadline', 'user_id'
+        'judul',
+        'deskripsi',
+        'lokasi',
+        'gaji',
+        'deadline_value',
+        'deadline_unit',
+        'deadline_end',
+        'status',
+        'user_id',
+        'gambar'
     ];
+
 
     public function user()
     {
@@ -20,6 +30,6 @@ class loker extends Model
 
     public function statusPekerjaans()
     {
-        return $this->hasMany(\App\Models\status_pekerjaan::class);
+        return $this->hasMany(status_pekerjaan::class);
     }
 }
