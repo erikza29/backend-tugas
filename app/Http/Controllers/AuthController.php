@@ -70,12 +70,11 @@ class AuthController extends Controller
                 ], 422);
             }
 
-            // Simpan user ke database (kolom sesuai model User)
             $user = User::create([
                 'name'     => $request->name,
                 'email'    => $request->email,
                 'password' => Hash::make($request->password),
-                'whatsapp' => null, // default (karena frontend tidak mengirim)
+                'whatsapp' => null, 
             ]);
 
             return response()->json([

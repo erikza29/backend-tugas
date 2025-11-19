@@ -12,12 +12,9 @@ use Illuminate\Support\Facades\Log;
 
 class StatusPekerjaanController extends Controller
 {
-    /**
-     * Tambah pekerjaan baru (misalnya setelah diterima).
-     */
+
     public function store(StatusPekerjaanRequest $request)
     {
-        // Cegah duplikasi
         $existing = status_pekerjaan::where('user_id', $request->user_id)
             ->where('loker_id', $request->loker_id)
             ->first();
@@ -26,7 +23,7 @@ class StatusPekerjaanController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Pekerjaan sudah tercatat.'
-            ], 409); // Conflict
+            ], 409);
         }
 
         $pekerjaan = status_pekerjaan::create([
@@ -43,14 +40,13 @@ class StatusPekerjaanController extends Controller
         ], 201);
     }
 
-    /**
-     * Riwayat pekerjaan berdasarkan user login
-     */
+
     public function riwayat(Request $request)
     {
         $user = $request->user();
 
-        $data = status_pekerjaan::with('loker')
+        // FIX → include deadline_end
+        $data = status_pekerjaan::with(['loker:id,judul,deadline_end'])
             ->where('user_id', $user->id)
             ->orderByDesc('created_at')
             ->get();
@@ -62,12 +58,9 @@ class StatusPekerjaanController extends Controller
         ]);
     }
 
-    /**
-     * Update status pekerjaan
-     */
+
     public function updateStatus(Request $request, $id, $status)
     {
-        // validasi status
         $validStatus = ['aktif', 'selesai', 'dibatalkan', 'ditolak'];
         if (!in_array($status, $validStatus)) {
             return response()->json([
@@ -76,8 +69,7 @@ class StatusPekerjaanController extends Controller
             ], 422);
         }
 
-        // ambil pekerjaan
-        $pekerjaan = status_pekerjaan::find($id); // pastikan model pakai PascalCase
+        $pekerjaan = status_pekerjaan::find($id);
 
         if (!$pekerjaan) {
             return response()->json([
@@ -86,11 +78,10 @@ class StatusPekerjaanController extends Controller
             ], 404);
         }
 
-        // isi tanggal_selesai jika selesai/dibatalkan
         if (in_array($status, ['selesai', 'dibatalkan'])) {
             $pekerjaan->tanggal_selesai = now();
         } else {
-            $pekerjaan->tanggal_selesai = null; // reset jika status kembali ke aktif/ditolak
+            $pekerjaan->tanggal_selesai = null;
         }
 
         $pekerjaan->status = $status;
@@ -113,9 +104,6 @@ class StatusPekerjaanController extends Controller
     }
 
 
-    /**
-     * Tolak lamaran (ubah status jadi ditolak)
-     */
     public function tolak(Request $request)
     {
         $request->validate([
@@ -145,46 +133,49 @@ class StatusPekerjaanController extends Controller
     }
 
 
-public function riwayatGabungan()
-{
-    $userId = Auth::id();
+    public function riwayatGabungan()
+    {
+        $userId = Auth::id();
 
-    // Ambil semua lamaran user
-    $lamaran = status_kerja::with('loker')
-        ->where('user_id', $userId)
-        ->get()
-        ->map(function ($item) {
-            return [
-                'type'   => 'lamaran',
-                'id'     => $item->id,
-                'loker'  => $item->loker->judul ?? null,
-                'status' => $item->status,
-                'tanggal'=> $item->created_at,
-            ];
-        });
+        $lamaran = status_kerja::with('loker')
+            ->where('user_id', $userId)
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'type'   => 'lamaran',
+                    'id'     => $item->id,
+                    'loker'  => [
+                        'judul' => $item->loker->judul ?? null,
+                        'deadline_end' => $item->loker->deadline_end ?? null,
+                    ],
+                    'status' => $item->status,
+                    'tanggal'=> $item->created_at,
+                ];
+            });
 
-    // Ambil semua pekerjaan user
-    $pekerjaan = status_pekerjaan::with('loker')
-        ->where('user_id', $userId)
-        ->get()
-        ->map(function ($item) {
-            return [
-                'type'   => 'pekerjaan',
-                'id'     => $item->id,
-                'loker'  => $item->loker->judul ?? null,
-                'status' => $item->status,
-                'tanggal'=> $item->tanggal_mulai,
-            ];
-        });
+        $pekerjaan = status_pekerjaan::with('loker')
+            ->where('user_id', $userId)
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'type'   => 'pekerjaan',
+                    'id'     => $item->id,
+                    'loker'  => [
+                        'judul' => $item->loker->judul ?? null,
+                        'deadline_end' => $item->loker->deadline_end ?? null,
+                    ],
+                    'status' => $item->status,
+                    'tanggal'=> $item->tanggal_mulai,
+                ];
+            });
 
-    // Gabungkan lamaran + pekerjaan
-    $riwayat = $lamaran->merge($pekerjaan)->sortByDesc('tanggal')->values();
+        $riwayat = $lamaran->merge($pekerjaan)->sortByDesc('tanggal')->values();
 
-    return response()->json([
-        'success' => true,
-        'message' => 'Riwayat berhasil diambil',
-        'data'    => $riwayat
-    ]);
-}
+        return response()->json([
+            'success' => true,
+            'message' => 'Riwayat berhasil diambil',
+            'data'    => $riwayat
+        ]);
+    }
 
 }

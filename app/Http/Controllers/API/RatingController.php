@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Models\rating;
+use App\Models\status_kerja;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -28,9 +29,35 @@ class RatingController extends Controller
             'rating' => 'required|integer|min:1|max:5',
         ]);
 
+        $userId = Auth::id(); // pemberi rating (pemberi kerja)
+
+        // 1. Pastikan user ini adalah PEMILIK loker (pemberi kerja)
+        $loker = \App\Models\Loker::find($request->loker_id);
+
+        if (!$loker || $loker->user_id != $userId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda bukan pemilik loker ini, tidak bisa memberi rating.',
+            ], 403);
+        }
+
+        // 2. Pastikan pekerja PERNAH melamar dan statusnya DITERIMA
+        $status = status_kerja::where('loker_id', $request->loker_id)
+            ->where('user_id', $request->target_id)
+            ->where('status', 'diterima')
+            ->first();
+
+        if (!$status) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Pekerja ini tidak diterima pada loker ini, tidak bisa diberi rating.',
+            ], 403);
+        }
+
+        // 3. Simpan atau update rating
         $rating = Rating::updateOrCreate(
             [
-                'yangreting_id' => Auth::id(),
+                'yangreting_id' => $userId,
                 'target_id' => $request->target_id,
                 'loker_id' => $request->loker_id,
             ],
@@ -47,6 +74,7 @@ class RatingController extends Controller
             'data' => $rating
         ]);
     }
+
 
     public function show($id)
     {

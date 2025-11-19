@@ -31,7 +31,6 @@ class LamaranMasukController extends Controller
             ], 404);
         }
 
-        // Pastikan loker milik pemberi kerja yang login
         $pemberiKerjaId = Auth::id();
         if ($lamaran->loker->user_id != $pemberiKerjaId) {
             return response()->json([
@@ -43,7 +42,6 @@ class LamaranMasukController extends Controller
         $lamaran->status = $status;
         $lamaran->save();
 
-        // Jika diterima, buat status_kerja baru
         if ($status === 'diterima') {
             status_kerja::create([
                 'loker_id' => $lamaran->loker_id,
@@ -56,7 +54,6 @@ class LamaranMasukController extends Controller
             $pesan = 'Lamaran Anda ditolak.';
         }
 
-        // Kirim notifikasi ke pelamar
         notifikasi::create([
             'pekerja_id' => $lamaran->user_id,
             'isi_pesan' => $pesan,
@@ -72,8 +69,7 @@ class LamaranMasukController extends Controller
     {
         $user = Auth::user();
 
-        // Ambil semua loker yang dibuat oleh user ini
-        $lokers = loker::with(['statusPekerjaans.user']) // relasi lamaran dan user pelamar
+        $lokers = loker::with(['statusPekerjaans.user'])
             ->where('user_id', $user->id)
             ->get();
 
@@ -108,7 +104,6 @@ class LamaranMasukController extends Controller
 
         $pemberiKerjaId = Auth::id();
 
-        // Pastikan loker ini memang milik pemberi kerja yang login
         $loker = \App\Models\Loker::where('id', $request->loker_id)
             ->where('user_id', $pemberiKerjaId)
             ->first();
@@ -120,7 +115,6 @@ class LamaranMasukController extends Controller
             ], 403);
         }
 
-        // Ubah status_pekerjaan jadi 'diterima'
         $status = status_pekerjaan::where('loker_id', $request->loker_id)
             ->where('user_id', $request->pekerja_id)
             ->first();
@@ -135,14 +129,12 @@ class LamaranMasukController extends Controller
         $status->status = 'diterima';
         $status->save();
 
-        // Tambahkan entri ke status_kerjas
         status_kerja::create([
             'loker_id' => $request->loker_id,
             'pekerja_id' => $request->pekerja_id,
             'status' => 'dikerjakan',
         ]);
 
-        // Kirim notifikasi ke pekerja
         notifikasi::create([
             'pekerja_id' => $request->pekerja_id,
             'isi_pesan' => 'Lamaran Anda telah diterima!',
@@ -187,7 +179,6 @@ class LamaranMasukController extends Controller
     $status->status = 'ditolak';
     $status->save();
 
-    // Kirim notifikasi ke pekerja
     notifikasi::create([
         'pekerja_id' => $request->pekerja_id,
         'isi_pesan' => 'Lamaran Anda ditolak.',

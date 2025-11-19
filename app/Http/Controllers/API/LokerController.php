@@ -10,7 +10,6 @@ use Illuminate\Support\Facades\Auth;
 
 class LokerController extends Controller
 {
-    // 🔹 Hanya menampilkan lowongan milik user login
     public function index()
     {
         $lokers = Loker::with(['user.profil'])
@@ -29,20 +28,17 @@ class LokerController extends Controller
         ]);
     }
 
-    // 🔹 Store (buat lowongan baru)
     public function store(LokerRequest $request)
     {
         $data = $request->all();
         $data['user_id'] = Auth::id();
 
-        // Simpan gambar
         if ($request->hasFile('gambar')) {
             $filename = time() . '.' . $request->gambar->extension();
             $request->gambar->move(public_path('uploads/loker'), $filename);
             $data['gambar'] = $filename;
         }
 
-        // Simpan awal, deadline belum dihitung (hanya disimpan setting-nya)
         $loker = Loker::create($data);
 
         $loker->load(['user.profil']);
@@ -55,7 +51,6 @@ class LokerController extends Controller
         ]);
     }
 
-    // 🔹 Show (detail lowongan)
     public function show($id)
     {
         $loker = Loker::with(['user.profil'])->findOrFail($id);
@@ -76,7 +71,6 @@ class LokerController extends Controller
         ]);
     }
 
-    // 🔹 Update (update data + gambar)
     public function update(LokerRequest $request, $id)
     {
         $loker = Loker::findOrFail($id);
@@ -90,7 +84,6 @@ class LokerController extends Controller
 
         $data = $request->all();
 
-        // Update gambar
         if ($request->hasFile('gambar')) {
             if ($loker->gambar && file_exists(public_path('uploads/loker/' . $loker->gambar))) {
                 unlink(public_path('uploads/loker/' . $loker->gambar));
@@ -113,7 +106,6 @@ class LokerController extends Controller
         ]);
     }
 
-    // 🔹 Hapus lowongan
     public function destroy($id)
     {
         $loker = Loker::findOrFail($id);
@@ -137,7 +129,6 @@ class LokerController extends Controller
         ]);
     }
 
-    // 🔹 Public list (untuk semua visitor)
     public function publicIndex()
     {
         $lokers = Loker::with(['user.profil'])->latest()->get();
@@ -153,7 +144,6 @@ class LokerController extends Controller
         ]);
     }
 
-    // 🔹 Public detail
     public function publicShow($id)
     {
         $loker = Loker::with(['user.profil'])->find($id);
@@ -174,7 +164,6 @@ class LokerController extends Controller
         ]);
     }
 
-    // 🔹 Update status lowongan (DIPAKAI ADMIN ACC/TOLAK PELAMAR)
     public function updateStatus(Request $request, $id)
     {
         $loker = Loker::find($id);
@@ -193,7 +182,6 @@ class LokerController extends Controller
         $oldStatus = $loker->status;
         $newStatus = $request->status;
 
-        // 🔥 Jika status berubah dari AKTIF → TUTUP, maka deadline mulai dihitung
         if ($oldStatus === 'aktif' && $newStatus === 'tutup') {
             if ($loker->deadline_value && $loker->deadline_unit) {
                 if ($loker->deadline_unit === 'jam') {
@@ -204,12 +192,10 @@ class LokerController extends Controller
             }
         }
 
-        // 🔥 Jika status dari TUTUP → AKTIF, reset deadline
         if ($oldStatus === 'tutup' && $newStatus === 'aktif') {
             $loker->deadline_end = null;
         }
 
-        // Update status
         $loker->status = $newStatus;
         $loker->save();
 

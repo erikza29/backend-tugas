@@ -10,10 +10,8 @@ use Illuminate\Support\Facades\Auth;
 
 class StatusKerjaController extends Controller
 {
-    // Melamar pekerjaan
     public function store(StatusKerjaRequest $request)
     {
-        // Cek apakah sudah pernah melamar
         $existing = status_kerja::where('user_id', Auth::id())
             ->where('loker_id', $request->loker_id)
             ->first();
@@ -38,7 +36,6 @@ class StatusKerjaController extends Controller
         ]);
     }
 
-    // Melihat pelamar dari satu loker
     public function pelamarList($loker_id)
     {
         $pelamars = status_kerja::with('user')
@@ -52,8 +49,7 @@ class StatusKerjaController extends Controller
         ]);
     }
 
-    // Menyetujui atau menolak lamaran
-   // Menyetujui atau menolak lamaran
+
 public function updateStatus($id, $status)
 {
     if (!in_array($status, ['diterima', 'ditolak'])) {
@@ -67,7 +63,6 @@ public function updateStatus($id, $status)
     $lamaran->status = $status;
     $lamaran->save();
 
-    // Jika diterima → otomatis buat status_pekerjaan aktif
     if ($status === 'diterima') {
         \App\Models\status_pekerjaan::firstOrCreate(
             [
@@ -89,16 +84,15 @@ public function updateStatus($id, $status)
 }
 
 
-    // Riwayat kerja
     public function index(Request $request)
     {
         $user = Auth::user();
 
         $data = status_kerja::with(['user:id,name', 'loker:id,judul,user_id'])
             ->where(function ($query) use ($user) {
-                $query->where('user_id', $user->id) // pekerja
+                $query->where('user_id', $user->id)
                       ->orWhereHas('loker', function ($q) use ($user) {
-                          $q->where('user_id', $user->id); // pemberi kerja
+                          $q->where('user_id', $user->id); 
                       });
             })
             ->orderBy('created_at', 'desc')

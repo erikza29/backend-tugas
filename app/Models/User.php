@@ -32,7 +32,6 @@ class User extends Authenticatable
         ];
     }
 
-    // Relasi ke lowongan
     public function lokers()
     {
         return $this->hasMany(Loker::class);

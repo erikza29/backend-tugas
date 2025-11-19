@@ -16,7 +16,6 @@ class ProfilController extends Controller
         $profil = Profil::where('pekerja_id', Auth::id())->first();
         $user = Auth::user();
 
-        // Jika profil belum dibuat → fallback ke data user
         if (!$profil) {
             return response()->json([
                 'success' => true,
@@ -26,12 +25,11 @@ class ProfilController extends Controller
                     'nama' => $user->name,
                     'deskripsi' => '',
                     'gambar_url' => null,
-                    'whatsapp' => $user->whatsapp, // WA dari tabel users
+                    'whatsapp' => $user->whatsapp,
                 ]
             ]);
         }
 
-        // Convert gambar_url ke full URL
         if ($profil->gambar_url) {
             $profil->gambar_url = url($profil->gambar_url);
         }
@@ -44,7 +42,7 @@ class ProfilController extends Controller
                 'nama' => $profil->nama,
                 'deskripsi' => $profil->deskripsi,
                 'gambar_url' => $profil->gambar_url,
-                'whatsapp' => $user->whatsapp, // WA tetap dari users
+                'whatsapp' => $user->whatsapp,
             ]
         ]);
     }
@@ -54,7 +52,7 @@ class ProfilController extends Controller
         $validator = Validator::make($request->all(), [
             'nama' => 'required|string|max:255',
             'deskripsi' => 'required|string',
-            'whatsapp' => 'nullable|string|max:20', // input WA untuk table users
+            'whatsapp' => 'nullable|string|max:20',
             'foto' => 'nullable|image|mimes:jpeg,png,jpg,HEIC|max:2048',
         ]);
 
@@ -73,13 +71,11 @@ class ProfilController extends Controller
             'deskripsi' => $request->deskripsi,
         ];
 
-        // Upload foto baru
         if ($request->hasFile('foto')) {
             $file = $request->file('foto');
             $filename = uniqid().'_'.$file->getClientOriginalName();
             $path = $file->storeAs('profil', $filename, 'public');
 
-            // hapus foto lama
             if ($profil && $profil->gambar_url) {
                 $oldPath = str_replace('/storage/', '', $profil->gambar_url);
                 Storage::disk('public')->delete($oldPath);
@@ -88,20 +84,17 @@ class ProfilController extends Controller
             $data['gambar_url'] = Storage::url($path);
         }
 
-        // Simpan atau update profil
         $profil = Profil::updateOrCreate(
             ['pekerja_id' => Auth::id()],
             $data
         );
 
-        // Update WhatsApp di tabel users (bukan di profils)
         if ($request->filled('whatsapp')) {
             $user = Auth::user();
             $user->whatsapp = $request->whatsapp;
             $user->save();
         }
 
-        // Convert full URL
         if ($profil->gambar_url) {
             $profil->gambar_url = url($profil->gambar_url);
         }
@@ -114,7 +107,7 @@ class ProfilController extends Controller
                 'nama' => $profil->nama,
                 'deskripsi' => $profil->deskripsi,
                 'gambar_url' => $profil->gambar_url,
-                'whatsapp' => Auth::user()->whatsapp, // WA dari users
+                'whatsapp' => Auth::user()->whatsapp,
             ]
         ]);
     }
@@ -142,7 +135,7 @@ class ProfilController extends Controller
                 'nama' => $profil->nama,
                 'deskripsi' => $profil->deskripsi,
                 'gambar_url' => $profil->gambar_url,
-                'whatsapp' => $profil->pekerja->whatsapp ?? null, // WA dari tabel users
+                'whatsapp' => $profil->pekerja->whatsapp ?? null,
             ]
         ]);
     }
@@ -167,7 +160,6 @@ class ProfilController extends Controller
         $filename = uniqid().'_'.$file->getClientOriginalName();
         $path = $file->storeAs('profil', $filename, 'public');
 
-        // Buat profil jika belum ada
         $profil = Profil::firstOrCreate(
             ['pekerja_id' => $user->id],
             [
@@ -177,7 +169,6 @@ class ProfilController extends Controller
             ]
         );
 
-        // Hapus foto lama
         if ($profil->gambar_url) {
             $oldPath = str_replace('/storage/', '', $profil->gambar_url);
             Storage::disk('public')->delete($oldPath);
@@ -191,7 +182,7 @@ class ProfilController extends Controller
             'message' => 'Foto profil berhasil diupload',
             'data' => [
                 'gambar_url' => url($profil->gambar_url),
-                'whatsapp' => $user->whatsapp, // tetap ikut dikirim jika diperlukan
+                'whatsapp' => $user->whatsapp, 
             ]
         ]);
     }
