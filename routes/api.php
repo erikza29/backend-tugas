@@ -7,7 +7,7 @@ use App\Http\Controllers\API\ProfilController;
 use App\Http\Controllers\API\RatingController;
 use App\Http\Controllers\API\StatusKerjaController;
 use App\Http\Controllers\API\StatusPekerjaanController;
-use App\Http\Controllers\API\SuperAdminController;
+use App\Http\Controllers\SuperAdminController;
 use App\Http\Controllers\AuthController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -142,12 +142,16 @@ Route::middleware('auth:sanctum')->group(function () {
 */
 Route::middleware('auth:sanctum')->prefix('superadmin')->group(function () {
 
+    // Lokers
     Route::get('/lokers', [SuperAdminController::class, 'lokersIndex']);
     Route::delete('/lokers/{id}', [SuperAdminController::class, 'lokersDestroy']);
 
+    // Users
     Route::get('/users', [SuperAdminController::class, 'usersIndex']);
     Route::delete('/users/{id}', [SuperAdminController::class, 'usersDestroy']);
 });
+
+
 
 
 

@@ -23,63 +23,38 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
-        $credentials = $request->validate([
+        $request->validate([
             'email' => 'required|email',
-            'password' => 'required',
+            'password' => 'required'
         ]);
 
-        $email = $credentials['email'];
-        $password = $credentials['password'];
+        $user = User::where('email', $request->email)->first();
 
-        /* ========================================
-           1. LOGIN SUPERADMIN (TANPA DATABASE)
-        ======================================== */
-        if (in_array($email, $this->superAdminEmails)) {
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Email atau password salah'
+            ], 401);
+        }
 
-            // Cek password superadmin
-            if ($password !== $this->superAdminPassword) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Password superadmin salah',
-                    'data' => null
-                ], 401);
-            }
-
-            // Buat "user virtual" tanpa database
-            $fake = new User();
-            $fake->id = 999999; // ID palsu, aman
-            $fake->name = "Super Admin";
-            $fake->email = $email;
-
-            // Generate token untuk sanctum
-            $token = $fake->createToken('superadmin_token')->plainTextToken;
+        // SUPERADMIN LOGIN
+        if ($user->is_superadmin) {
+            $token = $user->createToken('superadmin')->plainTextToken;
 
             return response()->json([
                 'success' => true,
                 'message' => 'Login superadmin berhasil',
                 'data' => [
                     'token' => $token,
-                    'user' => $fake,
-                    'is_superadmin' => true
+                    'user' => $user,
+                    'role' => 'superadmin',
+                    'is_superadmin' => true,
                 ]
             ]);
-
         }
 
-        /* ========================================
-           2. LOGIN USER BIASA (NORMAL)
-        ======================================== */
-        $user = User::where('email', $email)->first();
-
-        if (!$user || !Hash::check($password, $user->password)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Email atau password salah',
-                'data' => null
-            ], 401);
-        }
-
-        $token = $user->createToken('auth_token')->plainTextToken;
+        // LOGIN USER BIASA
+        $token = $user->createToken('user')->plainTextToken;
 
         return response()->json([
             'success' => true,
@@ -87,11 +62,12 @@ class AuthController extends Controller
             'data' => [
                 'token' => $token,
                 'user' => $user,
-                'is_superadmin' => false
+                'role' => $user->role,
+                'is_superadmin' => false,
             ]
         ]);
-
     }
+
 
     public function logout(Request $request)
     {

@@ -1,41 +1,45 @@
 <?php
 
-namespace App\Http\Controllers\API;
+namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Models\Loker;
+use App\Models\loker;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class SuperAdminController extends Controller
 {
-    // Daftar email SuperAdmin
+    // Daftar email superadmin
     protected $superAdminEmails = [
         'superadmin@a.b',
-        // Tambahkan email superadmin lain
+        // tambah email lain kalau perlu
     ];
 
-    // Cek apakah user termasuk SuperAdmin
+    // Cek status superadmin
     protected function isSuperAdmin($user)
     {
         return $user && in_array($user->email, $this->superAdminEmails);
     }
 
     /* =========================
-       Lokers: read & delete
+       📌 READ Lokers
        ========================= */
     public function lokersIndex(Request $request)
     {
         $user = $request->user();
+
         if (!$this->isSuperAdmin($user)) {
             return response()->json(['success' => false, 'message' => 'Akses ditolak'], 403);
         }
 
-        // Ambil semua lokers beserta user + profil
-        $lokers = Loker::with(['user.profil'])->latest()->get();
+        // Ambil semua loker + user + profil
+        $lokers = loker::with(['user.profil'])->latest()->get();
+
         $lokers->map(function ($l) {
-            $l->gambar_url = $l->gambar ? asset('uploads/loker/' . $l->gambar) : null;
+            $l->gambar_url = $l->gambar
+                ? asset('uploads/loker/' . $l->gambar)
+                : null;
         });
 
         return response()->json([
@@ -45,16 +49,20 @@ class SuperAdminController extends Controller
         ]);
     }
 
+    /* =========================
+       📌 DELETE Loker
+       ========================= */
     public function lokersDestroy(Request $request, $id)
     {
         $user = $request->user();
+
         if (!$this->isSuperAdmin($user)) {
             return response()->json(['success' => false, 'message' => 'Akses ditolak'], 403);
         }
 
-        $loker = Loker::findOrFail($id);
+        $loker = loker::findOrFail($id);
 
-        // Hapus gambar fisik jika ada
+        // Hapus gambar fisik
         if ($loker->gambar && file_exists(public_path('uploads/loker/' . $loker->gambar))) {
             unlink(public_path('uploads/loker/' . $loker->gambar));
         }
@@ -70,16 +78,18 @@ class SuperAdminController extends Controller
     }
 
     /* =========================
-       Users: read & delete
+       📌 READ Users
        ========================= */
     public function usersIndex(Request $request)
     {
         $user = $request->user();
+
         if (!$this->isSuperAdmin($user)) {
             return response()->json(['success' => false, 'message' => 'Akses ditolak'], 403);
         }
 
-        $users = User::latest()->get();
+        // wajib eager load profil!
+        $users = User::with('profil')->latest()->get();
 
         return response()->json([
             'success' => true,
@@ -88,9 +98,13 @@ class SuperAdminController extends Controller
         ]);
     }
 
+    /* =========================
+       📌 DELETE User
+       ========================= */
     public function usersDestroy(Request $request, $id)
     {
         $user = $request->user();
+
         if (!$this->isSuperAdmin($user)) {
             return response()->json(['success' => false, 'message' => 'Akses ditolak'], 403);
         }
@@ -101,7 +115,6 @@ class SuperAdminController extends Controller
             return response()->json(['success' => false, 'message' => 'Tidak bisa menghapus akun sendiri'], 403);
         }
 
-        // Hapus user
         $targetUser->delete();
 
         Log::info("SuperAdmin {$user->email} menghapus user {$targetUser->email}");

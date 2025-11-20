@@ -24,7 +24,8 @@ class profil extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class, 'pekerja_id');
+        return $this->belongsTo(User::class, 'user_id');
     }
+
 
 }
