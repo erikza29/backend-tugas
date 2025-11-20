@@ -9,6 +9,7 @@ use App\Http\Controllers\API\StatusKerjaController;
 use App\Http\Controllers\API\StatusPekerjaanController;
 use App\Http\Controllers\SuperAdminController;
 use App\Http\Controllers\AuthController;
+use App\Http\Middleware\IsSuperAdmin;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -140,16 +141,16 @@ Route::middleware('auth:sanctum')->group(function () {
 | SUPERADMIN
 |--------------------------------------------------------------------------
 */
-Route::middleware('auth:sanctum')->prefix('superadmin')->group(function () {
+Route::middleware(['auth:sanctum', IsSuperAdmin::class])
+    ->prefix('superadmin')
+    ->group(function () {
 
-    // Lokers
-    Route::get('/lokers', [SuperAdminController::class, 'lokersIndex']);
-    Route::delete('/lokers/{id}', [SuperAdminController::class, 'lokersDestroy']);
+        Route::get('/lokers', [SuperAdminController::class, 'lokersIndex']);
+        Route::delete('/lokers/{id}', [SuperAdminController::class, 'lokersDestroy']);
 
-    // Users
-    Route::get('/users', [SuperAdminController::class, 'usersIndex']);
-    Route::delete('/users/{id}', [SuperAdminController::class, 'usersDestroy']);
-});
+        Route::get('/users', [SuperAdminController::class, 'usersIndex']);
+        Route::delete('/users/{id}', [SuperAdminController::class, 'usersDestroy']);
+    });
 
 
 
