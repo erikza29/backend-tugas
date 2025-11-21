@@ -12,66 +12,40 @@ use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
-    // Daftar email superadmin statis
-    protected $superAdminEmails = [
-        's@s.s',
-        // Tambahkan jika ingin lebih banyak
-    ];
-
-    // Password superadmin (bebas ditentukan)
-    protected $superAdminPassword = '1';
-
     public function login(Request $request)
     {
-        $request->validate([
+        $credentials = $request->validate([
             'email' => 'required|email',
-            'password' => 'required'
+            'password' => 'required',
         ]);
 
-        $user = User::where('email', $request->email)->first();
+        // Ambil user
+        $user = User::where('email', $credentials['email'])->first();
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
+        if (!$user || !Hash::check($credentials['password'], $user->password)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Email atau password salah'
+                'message' => 'Email atau password salah',
+                'data' => null
             ], 401);
         }
 
-        // SUPERADMIN LOGIN
-        if ($user->is_superadmin) {
-            $token = $user->createToken('superadmin')->plainTextToken;
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Login superadmin berhasil',
-                'data' => [
-                    'token' => $token,
-                    'user' => $user,
-                    'role' => 'superadmin',
-                    'is_superadmin' => true,
-                ]
-            ]);
-        }
-
-        // LOGIN USER BIASA
-        $token = $user->createToken('user')->plainTextToken;
+        // Buat token
+        $token = $user->createToken('api-token')->plainTextToken;
 
         return response()->json([
             'success' => true,
             'message' => 'Login berhasil',
-            'data' => [
-                'token' => $token,
-                'user' => $user,
-                'role' => $user->role,
-                'is_superadmin' => false,
-            ]
-        ]);
+            'token' => $token,
+            'user'  => $user,
+            'is_superadmin' => (int) $user->is_superadmin,
+        ], 200);
     }
 
 
     public function logout(Request $request)
     {
-        $request->user()->tokens()->delete();
+        $request->user()?->currentAccessToken()?->delete();
 
         return response()->json([
             'success' => true,
@@ -79,6 +53,7 @@ class AuthController extends Controller
             'data' => null
         ]);
     }
+
 
     public function register(Request $request)
     {
@@ -120,5 +95,4 @@ class AuthController extends Controller
             ], 500);
         }
     }
-
 }

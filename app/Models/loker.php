@@ -19,7 +19,8 @@ class loker extends Model
         'deadline_end',
         'status',
         'user_id',
-        'gambar'
+        'gambar',
+        'gambar_url'
     ];
 
 
@@ -32,4 +33,7 @@ class loker extends Model
     {
         return $this->hasMany(status_pekerjaan::class);
     }
+
+
+
 }
