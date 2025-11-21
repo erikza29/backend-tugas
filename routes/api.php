@@ -9,6 +9,7 @@ use App\Http\Controllers\API\RatingController;
 use App\Http\Controllers\API\StatusKerjaController;
 use App\Http\Controllers\API\StatusPekerjaanController;
 use App\Http\Controllers\AuthController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/ping', function () {
@@ -38,12 +39,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/loker/{id}', [LokerController::class, 'show']);
     Route::put('/loker/{id}', [LokerController::class, 'update']);
     Route::delete('/loker/{id}', [LokerController::class, 'destroy']);
-
 });
-// === ROUTE PUBLIK UNTUK PEKERJA ===
-Route::get('/lokers', [LokerController::class, 'publicIndex']); // daftar semua loker
-Route::get('/lokers/{id}', [LokerController::class, 'publicShow']); // detail satu loker
 
+// ROUTE PUBLIK
+Route::get('/lokers', [LokerController::class, 'publicIndex']);
+Route::get('/lokers/{id}', [LokerController::class, 'publicShow']);
 
 /*
 |-------------------------------------------------------------------------
@@ -56,7 +56,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/pelamar/{loker_id}', [StatusKerjaController::class, 'pelamarList']);
     Route::get('/riwayat-kerja', [StatusKerjaController::class, 'index']);
 });
-
 
 /*
 |--------------------------------------------------------------------------
@@ -75,8 +74,7 @@ Route::prefix('pekerjaan')->middleware('auth:sanctum')->group(function () {
     Route::get('/riwayat', [StatusPekerjaanController::class, 'riwayat']);
     Route::put('/{id}/status/{status}', [StatusPekerjaanController::class, 'updateStatus']);
     Route::post('/tolak', [StatusPekerjaanController::class, 'tolak']);
-    Route::middleware('auth:sanctum')->get('/riwayat-gabungan', [StatusPekerjaanController::class, 'riwayatGabungan']);
-
+    Route::get('/riwayat-gabungan', [StatusPekerjaanController::class, 'riwayatGabungan']);
 });
 
 /*
@@ -113,7 +111,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/rating/user/{id}', [RatingController::class, 'userRating']);
     Route::get('/rating/user/{id}/list', [RatingController::class, 'listByUser']);
     Route::get('/rating/check/{target_id}', [RatingController::class, 'check']);
-
 });
 
 /*
@@ -130,19 +127,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/pekerjaan/tolak', [StatusPekerjaanController::class, 'tolakPekerjaan']);
     Route::get('/riwayat', [StatusPekerjaanController::class, 'riwayatGabungan']);
     Route::put('/loker/{id}/status', [LokerController::class, 'updateStatus']);
-
 });
 
-
-/////////////////////////////////
-
-
+/*
+|--------------------------------------------------------------------------
+| ADMIN (VERSI BRANCH AZA)
+|--------------------------------------------------------------------------
+*/
 Route::get('/admin/users', [AdminController::class, 'users']);
 Route::delete('/admin/users/{id}', [AdminController::class, 'deleteUser']);
 Route::get('/admin/lokers', [AdminController::class, 'lokers']);
 Route::delete('/admin/lokers/{id}', [AdminController::class, 'deleteLoker']);
 Route::get('/admin/lokers/{id}', [AdminController::class, 'detailLoker']);
-
-
-
-
