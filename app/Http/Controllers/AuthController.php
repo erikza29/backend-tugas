@@ -12,39 +12,39 @@ use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
-    public function login(Request $request)
-    {
-        $credentials = $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
-        ]);
+   public function login(Request $request)
+{
+    $credentials = $request->validate([
+        'email' => 'required|email',
+        'password' => 'required',
+    ]);
 
-        $user = User::where('email', $credentials['email'])->first();
+    // Ambil user manual (BUKAN Auth::user)
+    $user = User::where('email', $credentials['email'])->first();
 
-        if (!$user || !Hash::check($credentials['password'], $user->password)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Email atau password salah',
-                'data' => null
-            ], 401);
-        }
-
-        $token = $user->createToken('auth_token')->plainTextToken;
-
+    if (!$user || !Hash::check($credentials['password'], $user->password)) {
         return response()->json([
-            'success' => true,
-            'message' => 'Login berhasil',
-            'data' => [
-                'token' => $token,
-                'user' => $user,
-            ]
-        ]);
+            'success' => false,
+            'message' => 'Email atau password salah',
+            'data' => null
+        ], 401);
     }
+
+    // Buat token untuk user ini
+    $token = $user->createToken('api-token')->plainTextToken;
+
+    return response()->json([
+        'success' => true,
+        'token' => $token,
+        'user'  => $user,
+        'is_superadmin' => (int) $user->is_superadmin, // ini jadi benar
+    ], 200);
+}
+
 
     public function logout(Request $request)
     {
-        $request->user()->tokens()->delete();
-
+         $request->user()?->currentAccessToken()?->delete();
         return response()->json([
             'success' => true,
             'message' => 'Logout berhasil',
@@ -74,7 +74,7 @@ class AuthController extends Controller
                 'name'     => $request->name,
                 'email'    => $request->email,
                 'password' => Hash::make($request->password),
-                'whatsapp' => null, 
+                'whatsapp' => null,
             ]);
 
             return response()->json([

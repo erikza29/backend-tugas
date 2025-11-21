@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\API\AdminController;
 use App\Http\Controllers\API\LamaranMasukController;
 use App\Http\Controllers\API\LokerController;
 use App\Http\Controllers\API\NotifikasiController;
@@ -131,6 +132,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/loker/{id}/status', [LokerController::class, 'updateStatus']);
 
 });
+
+
+/////////////////////////////////
+
+
+Route::get('/admin/users', [AdminController::class, 'users']);
+Route::delete('/admin/users/{id}', [AdminController::class, 'deleteUser']);
+Route::get('/admin/lokers', [AdminController::class, 'lokers']);
+Route::delete('/admin/lokers/{id}', [AdminController::class, 'deleteLoker']);
+Route::get('/admin/lokers/{id}', [AdminController::class, 'detailLoker']);
 
 
 
